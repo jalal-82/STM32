@@ -1,0 +1,5 @@
+../Core/Src/button.c:22:6:button_init	4	static
+../Core/Src/button.c:34:6:button_check	16	static
+../Core/Src/button.c:62:9:button_is_pressed	4	static
+../Core/Src/button.c:73:6:button_reset_flag	4	static
+../Core/Src/button.c:83:6:HAL_GPIO_EXTI_Callback	16	static
