@@ -11,6 +11,10 @@
 #include "led.h"
 #include "ultrasonic.h"
 #include "button.h"
+#include "potentiometer.h"
+#include "recording.h"
+#include "signals.h"
+#define DEBUG_MODE
 
 /* USER CODE END Includes */
 
@@ -30,12 +34,30 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+ADC_HandleTypeDef hadc1;
+
 I2C_HandleTypeDef hi2c1;
+
+TIM_HandleTypeDef htim1;
+TIM_HandleTypeDef htim2;
 
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 uint8_t buffer[50];
+
+
+uint8_t buttonState = 0;
+uint8_t prevButtonState = 0;
+uint8_t displayToggle = 0;  // 0 = Pot view, 1 = Ultra view
+uint32_t lastToggleTime = 0;
+const uint32_t DISPLAY_TOGGLE_INTERVAL = 3000;  // Toggle every 3 seconds
+
+/* TIM2 interrupt callback */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
+    Signals_HandleTimerInterrupt(htim);
+}
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -43,6 +65,9 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_I2C1_Init(void);
+static void MX_TIM1_Init(void);
+static void MX_ADC1_Init(void);
+static void MX_TIM2_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -83,64 +108,84 @@ int main(void)
   MX_GPIO_Init();
   MX_USART2_UART_Init();
   MX_I2C1_Init();
+  MX_TIM1_Init();
+  MX_ADC1_Init();
+  MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
-  Ultrasonic_Init();
+
+  lcd_init(0x27);
+
+  Signals_Init(&htim2, &htim1, &hadc1);
+
+  // Welcome message
+  lcd_clear();
+  lcd_send_string("Dual Sensor");
+  lcd_send_cmd(LCD_LINE2, 4);
+  lcd_send_string("Recorder v1.0");
+
+  char buffer[50];
+
+  HAL_Delay(2000);
+  lcd_clear();
+  lcd_send_string("Press B1 to");
+  lcd_send_cmd(LCD_LINE2, 4);
+  lcd_send_string("start recording");
+
+  // Init toggle timing
+  lastToggleTime = HAL_GetTick();
+  uint32_t lastDisplayUpdateTime = 0;
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+
+
   while (1)
-  {
+    {
+
+    // Call debug output function every 500ms
+//    static uint32_t lastDebugTime = 0;
+//    if (HAL_GetTick() - lastDebugTime > 500) {
+//        Signals_DebugOutput();
+//        lastDebugTime = HAL_GetTick();
+//    }
     /* USER CODE END WHILE */
-	  button_check();
-	  if (button_is_pressed()) {
-		  // Read distance from ultrasonic sensor
-		  float distance = Ultrasonic_Read();
+	  uint32_t currentTime = HAL_GetTick();
 
-			  // Check if reading was successful
-		  if (distance >= 0) {
-			// Format string with distance value (for debugging, can be removed)
-			sprintf((char*)buffer, "Distance: %.2f cm\r\n", distance);
-			HAL_UART_Transmit(&huart2, buffer, strlen((char*)buffer), 100);
+	  /* Read button state (B1 is active low) */
+	  prevButtonState = buttonState;
+	  buttonState = !HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin);  // Invert because button is active low
 
-			// Blink LED based on distance:
-			// 1. If distance is less than 10 cm - fast blinking
-			if (distance < 10) {
-			  for (int i = 0; i < 3; i++) {
-				blinkLed(LD2_GPIO_Port, LD2_Pin);  // This already includes delays
-			  }
-			}
-			// 2. If distance is between 10 and 30 cm - medium blinking
-			else if (distance < 30) {
-			  blinkLed(LD2_GPIO_Port, LD2_Pin);
-			  HAL_Delay(200);  // Extra delay for medium speed
-			}
-			// 3. If distance is more than 30 cm - slow blinking
-			else {
-			  blinkLed(LD2_GPIO_Port, LD2_Pin);
-			  HAL_Delay(500);  // Extra delay for slow speed
-			}
+	  /* Button press detection (rising edge) */
+	  if (buttonState && !prevButtonState) {
+		  if (!Signals_IsRecording()) {
+			  Signals_StartRecording();
+		  } else {
+			  Signals_StopRecording();
 		  }
-		  else {
-			// Error occurred - blink rapidly to indicate error
-			for (int i = 0; i < 5; i++) {
-			  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
-			  HAL_Delay(50);
-			  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
-			  HAL_Delay(50);
-			}
-
-			// Also send error through UART (for debugging)
-			sprintf((char*)buffer, "Sensor error: %.0f\r\n", distance);
-			HAL_UART_Transmit(&huart2, buffer, strlen((char*)buffer), 100);
-		  }
-
-		  // Short delay before next measurement
-		  HAL_Delay(100);
 	  }
 
+	  /* Toggle display if needed */
+	  if (currentTime - lastToggleTime > DISPLAY_TOGGLE_INTERVAL) {
+		  displayToggle = !displayToggle;
+		  lastToggleTime = currentTime;
+	  }
+
+	  /* Update display at reasonable rate (5Hz is plenty for LCD) */
+	  if (currentTime - lastDisplayUpdateTime >= 200) {
+		  /* Display statistics on LCD based on current view */
+		  if (displayToggle == 0) {
+			  Signals_DisplayPotView();
+		  } else {
+			  Signals_DisplayUltraView();
+		  }
+		  lastDisplayUpdateTime = currentTime;
+	  }
+
+	  /* Small delay for system performance */
+	  HAL_Delay(1);
     /* USER CODE BEGIN 3 */
-  }
+    }
   /* USER CODE END 3 */
 }
 
@@ -191,6 +236,58 @@ void SystemClock_Config(void)
 }
 
 /**
+  * @brief ADC1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_ADC1_Init(void)
+{
+
+  /* USER CODE BEGIN ADC1_Init 0 */
+
+  /* USER CODE END ADC1_Init 0 */
+
+  ADC_ChannelConfTypeDef sConfig = {0};
+
+  /* USER CODE BEGIN ADC1_Init 1 */
+
+  /* USER CODE END ADC1_Init 1 */
+
+  /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)
+  */
+  hadc1.Instance = ADC1;
+  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
+  hadc1.Init.Resolution = ADC_RESOLUTION_12B;
+  hadc1.Init.ScanConvMode = DISABLE;
+  hadc1.Init.ContinuousConvMode = DISABLE;
+  hadc1.Init.DiscontinuousConvMode = DISABLE;
+  hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
+  hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+  hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+  hadc1.Init.NbrOfConversion = 1;
+  hadc1.Init.DMAContinuousRequests = DISABLE;
+  hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
+  if (HAL_ADC_Init(&hadc1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+  */
+  sConfig.Channel = ADC_CHANNEL_0;
+  sConfig.Rank = 1;
+  sConfig.SamplingTime = ADC_SAMPLETIME_56CYCLES;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN ADC1_Init 2 */
+
+  /* USER CODE END ADC1_Init 2 */
+
+}
+
+/**
   * @brief I2C1 Initialization Function
   * @param None
   * @retval None
@@ -221,6 +318,97 @@ static void MX_I2C1_Init(void)
   /* USER CODE BEGIN I2C1_Init 2 */
 
   /* USER CODE END I2C1_Init 2 */
+
+}
+
+/**
+  * @brief TIM1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM1_Init(void)
+{
+
+  /* USER CODE BEGIN TIM1_Init 0 */
+
+  /* USER CODE END TIM1_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM1_Init 1 */
+
+  /* USER CODE END TIM1_Init 1 */
+  htim1.Instance = TIM1;
+  htim1.Init.Prescaler = 71;
+  htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim1.Init.Period = 65535;
+  htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim1.Init.RepetitionCounter = 0;
+  htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim1, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim1, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM1_Init 2 */
+
+  /* USER CODE END TIM1_Init 2 */
+
+}
+
+/**
+  * @brief TIM2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM2_Init(void)
+{
+
+  /* USER CODE BEGIN TIM2_Init 0 */
+
+  /* USER CODE END TIM2_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM2_Init 1 */
+
+  /* USER CODE END TIM2_Init 1 */
+  htim2.Instance = TIM2;
+  htim2.Init.Prescaler = 7199;
+  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim2.Init.Period = 9;
+  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM2_Init 2 */
+
+  /* USER CODE END TIM2_Init 2 */
 
 }
 
@@ -284,18 +472,18 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : ECHO_Pin */
+  GPIO_InitStruct.Pin = ECHO_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(ECHO_GPIO_Port, &GPIO_InitStruct);
+
   /*Configure GPIO pins : LD2_Pin TRIG_Pin */
   GPIO_InitStruct.Pin = LD2_Pin|TRIG_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : ECHO_Pin */
-  GPIO_InitStruct.Pin = ECHO_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(ECHO_GPIO_Port, &GPIO_InitStruct);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 

@@ -1,0 +1,8 @@
+../Core/Src/signals.c:24:6:Signals_Init	1
+../Core/Src/signals.c:43:6:Signals_HandleTimerInterrupt	6
+../Core/Src/signals.c:73:6:Signals_StartRecording	1
+../Core/Src/signals.c:79:6:Signals_StopRecording	1
+../Core/Src/signals.c:85:9:Signals_IsRecording	1
+../Core/Src/signals.c:90:6:Signals_DisplayPotView	3
+../Core/Src/signals.c:135:6:Signals_DisplayUltraView	2
+../Core/Src/signals.c:147:6:Signals_DebugOutput	1

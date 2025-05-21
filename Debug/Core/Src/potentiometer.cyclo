@@ -1,0 +1,3 @@
+../Core/Src/potentiometer.c:19:6:Potentiometer_Init	1
+../Core/Src/potentiometer.c:23:10:Potentiometer_Read	2
+../Core/Src/potentiometer.c:44:7:Potentiometer_GetVoltage	4

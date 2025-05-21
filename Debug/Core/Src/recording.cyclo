@@ -1,0 +1,11 @@
+../Core/Src/recording.c:7:6:PotRecording_Init	1
+../Core/Src/recording.c:19:6:PotRecording_Start	1
+../Core/Src/recording.c:30:6:PotRecording_Stop	1
+../Core/Src/recording.c:34:6:PotRecording_Process	12
+../Core/Src/recording.c:96:6:PotRecording_DisplayStats	2
+../Core/Src/recording.c:131:6:UltraRecording_Init	1
+../Core/Src/recording.c:142:6:UltraRecording_Start	1
+../Core/Src/recording.c:152:6:UltraRecording_Stop	1
+../Core/Src/recording.c:156:6:UltraRecording_Process	12
+../Core/Src/recording.c:207:6:UltraRecording_DisplayStats	3
+../Core/Src/recording.c:248:6:PotRecording_GetDebugData	2
