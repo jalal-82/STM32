@@ -1,0 +1,6 @@
+../Core/Src/potentioRecording.c:22:6:PotRecording_Init	1
+../Core/Src/potentioRecording.c:49:6:PotRecording_Start	1
+../Core/Src/potentioRecording.c:78:6:PotRecording_Stop	1
+../Core/Src/potentioRecording.c:87:6:PotRecording_Process	17
+../Core/Src/potentioRecording.c:183:6:PotRecording_DisplayStats	2
+../Core/Src/potentioRecording.c:219:6:PotRecording_GetDebugData	3

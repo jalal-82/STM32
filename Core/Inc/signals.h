@@ -1,4 +1,3 @@
-
 #ifndef INC_SIGNALS_H_
 #define INC_SIGNALS_H_
 
@@ -23,6 +22,10 @@ uint8_t Signals_IsRecording(void);
 void Signals_DisplayPotView(void);
 void Signals_DisplayUltraView(void);
 
+// Debug function
 void Signals_DebugOutput(void);
+
+// Utility function
+void resetStaticTrackers(void);
 
 #endif /* INC_SIGNALS_H_ */

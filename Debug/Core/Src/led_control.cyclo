@@ -1,0 +1,7 @@
+../Core/Src/led_control.c:17:6:LED_Init	1
+../Core/Src/led_control.c:25:6:LED_SetMode	8
+../Core/Src/led_control.c:70:6:LED_Process	9
+../Core/Src/led_control.c:123:6:LED_SetProximityThreshold	1
+../Core/Src/led_control.c:128:7:LED_GetProximityThreshold	1
+../Core/Src/led_control.c:133:11:LED_GetMode	1
+../Core/Src/led_control.c:138:6:LED_SetProximityBrightness	2

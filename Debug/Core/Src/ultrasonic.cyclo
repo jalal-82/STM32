@@ -1,3 +1,4 @@
-../Core/Src/ultrasonic.c:8:6:Ultrasonic_Init	1
-../Core/Src/ultrasonic.c:20:7:Ultrasonic_Read	8
-../Core/Src/ultrasonic.c:60:7:Ultrasonic_GetDistance	3
+../Core/Src/ultrasonic.c:11:6:Ultrasonic_Init	1
+../Core/Src/ultrasonic.c:23:7:Ultrasonic_Read	8
+../Core/Src/ultrasonic.c:64:7:Ultrasonic_GetDistance	3
+../Core/Src/ultrasonic.c:91:6:Ultrasonic_DebugDirectionChange	1

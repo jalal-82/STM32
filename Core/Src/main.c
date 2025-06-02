@@ -14,7 +14,9 @@
 #include "potentiometer.h"
 #include "recording.h"
 #include "signals.h"
-#define DEBUG_MODE
+#include "led_control.h"
+#include "report_generator.h"
+// #define DEBUG_MODE
 
 /* USER CODE END Includes */
 
@@ -52,10 +54,41 @@ uint8_t prevButtonState = 0;
 uint8_t displayToggle = 0;  // 0 = Pot view, 1 = Ultra view
 uint32_t lastToggleTime = 0;
 const uint32_t DISPLAY_TOGGLE_INTERVAL = 3000;  // Toggle every 3 seconds
+uint8_t buttonPressCount = 0;  // Counter to track button presses
 
 /* TIM2 interrupt callback */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
     Signals_HandleTimerInterrupt(htim);
+}
+
+/* Helper function to wait for a time period or detect button press */
+uint8_t waitForTimeOrButtonPress(uint32_t waitTimeMs) {
+    uint32_t startTime = HAL_GetTick();
+    uint8_t localButtonState = buttonState; // Start with current state
+    uint8_t buttonPressed = 0;
+    
+    while (HAL_GetTick() - startTime < waitTimeMs) {
+        // Check for button press (with debounce)
+        uint8_t currentButtonState = !HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin);
+        
+        // Button pressed (rising edge)
+        if (currentButtonState && !localButtonState) {
+            HAL_Delay(50); // Simple debounce
+            // Recheck to confirm it's still pressed
+            if (!HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin)) {
+                // Update global button state
+                buttonState = currentButtonState;
+                prevButtonState = localButtonState;
+                buttonPressed = 1;
+                break;
+            }
+        }
+        
+        localButtonState = currentButtonState;
+        HAL_Delay(10);
+    }
+    
+    return buttonPressed;
 }
 
 /* USER CODE END PV */
@@ -115,15 +148,19 @@ int main(void)
 
   lcd_init(0x27);
 
+  LED_Init();
+
+
   Signals_Init(&htim2, &htim1, &hadc1);
+  
+  // Initialize the report generator for UART reporting only
+  Report_Init(&huart2);
 
   // Welcome message
   lcd_clear();
   lcd_send_string("Dual Sensor");
   lcd_send_cmd(LCD_LINE2, 4);
   lcd_send_string("Recorder v1.0");
-
-  char buffer[50];
 
   HAL_Delay(2000);
   lcd_clear();
@@ -134,6 +171,7 @@ int main(void)
   // Init toggle timing
   lastToggleTime = HAL_GetTick();
   uint32_t lastDisplayUpdateTime = 0;
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -142,15 +180,11 @@ int main(void)
 
   while (1)
     {
-
-    // Call debug output function every 500ms
-//    static uint32_t lastDebugTime = 0;
-//    if (HAL_GetTick() - lastDebugTime > 500) {
-//        Signals_DebugOutput();
-//        lastDebugTime = HAL_GetTick();
-//    }
     /* USER CODE END WHILE */
 	  uint32_t currentTime = HAL_GetTick();
+
+	  /* Process LED state */
+	  LED_Process();
 
 	  /* Read button state (B1 is active low) */
 	  prevButtonState = buttonState;
@@ -158,10 +192,91 @@ int main(void)
 
 	  /* Button press detection (rising edge) */
 	  if (buttonState && !prevButtonState) {
-		  if (!Signals_IsRecording()) {
-			  Signals_StartRecording();
-		  } else {
-			  Signals_StopRecording();
+		  buttonPressCount++;  // Increment the button press counter
+
+		  if (buttonPressCount == 1) {
+			  // First button press
+			  if (!Signals_IsRecording()) {
+				  Signals_StartRecording();
+				  lcd_clear();
+				  lcd_send_string("REC: Potentiomtr");
+			  } else {
+				  Signals_StopRecording();
+				  // Generate the analysis report AFTER stopping and before resetting data
+				  Report_GenerateAnalysisReport(Recording_GetPotData(), Recording_GetUltraData());
+
+				  // Display a message that recording stopped and report was generated
+				  lcd_clear();
+				  lcd_send_string("REC Stopped.");
+				  lcd_send_cmd(LCD_LINE2, 4);
+				  lcd_send_string("Report Sent (UART)");
+				  HAL_Delay(2000); // Show message for a bit
+
+				  // Prepare for next session or stats view
+				  lcd_clear();
+				  lcd_send_string("Press B1 for");
+				  lcd_send_cmd(LCD_LINE2, 4);
+				  lcd_send_string("Stats / New Rec");
+			  }
+		  } else if (buttonPressCount == 2) {
+			  // Second button press: display detailed statistics on LCD
+			  // Data stream log was already sent live during recording.
+			  // Analysis report was sent when recording stopped (on first press if it was stopping).
+
+			  // If recording was active, stop it and generate final analysis report
+			  if (Signals_IsRecording()) {
+				  Signals_StopRecording();
+				  // Generate final report using accessor functions
+				  Report_GenerateAnalysisReport(Recording_GetPotData(), Recording_GetUltraData()); // Ensure final report is sent
+				  HAL_Delay(100); // Small delay
+			  }
+
+			  // Cycle through statistics windows on LCD
+			  uint8_t exitStatsView = 0;
+			  
+			  // Show each detailed stats window for 5 seconds or until button is pressed
+			  // Window 1 - Potentiometer Basic Stats
+			  Recording_ToggleDetailedStats(); // Toggle to window 1
+			  Recording_UpdateDisplay();
+			  if (waitForTimeOrButtonPress(5000)) { exitStatsView = 1; }
+			  
+			  if (!exitStatsView) {
+				  // Window 2 - Potentiometer Advanced Stats
+				  Recording_ToggleDetailedStats(); // Toggle to window 2
+				  Recording_UpdateDisplay();
+				  if (waitForTimeOrButtonPress(5000)) { exitStatsView = 1; }
+			  }
+			  
+			  if (!exitStatsView) {
+				  // Window 3 - Ultrasonic Stats
+				  Recording_ToggleDetailedStats(); // Toggle to window 3
+				  Recording_UpdateDisplay();
+				  if (waitForTimeOrButtonPress(5000)) { exitStatsView = 1; }
+			  }
+			  
+			  if (!exitStatsView) {
+				  // Window 4 - Combined Stats
+				  Recording_ToggleDetailedStats(); // Toggle to window 4
+				  Recording_UpdateDisplay();
+				  if (waitForTimeOrButtonPress(5000)) { exitStatsView = 1; }
+			  }
+			  
+			  // Reset to normal view (Window 0) for next time
+			  Recording_ToggleDetailedStats(); // Toggle back to 0
+
+			  // Reset for new recording session
+			  Recording_Init();
+			  resetStaticTrackers(); // Reset tracking variables in signals.c
+
+			  lcd_clear();
+			  lcd_send_string("Press B1 to");
+			  lcd_send_cmd(LCD_LINE2, 4);
+			  lcd_send_string("start recording");
+
+			  buttonPressCount = 0; // Reset for next cycle
+			  buttonState = 0;
+			  prevButtonState = 0;
+			  HAL_Delay(100);
 		  }
 	  }
 
@@ -184,6 +299,7 @@ int main(void)
 
 	  /* Small delay for system performance */
 	  HAL_Delay(1);
+
     /* USER CODE BEGIN 3 */
     }
   /* USER CODE END 3 */
@@ -340,7 +456,7 @@ static void MX_TIM1_Init(void)
 
   /* USER CODE END TIM1_Init 1 */
   htim1.Instance = TIM1;
-  htim1.Init.Prescaler = 71;
+  htim1.Init.Prescaler = 83;
   htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim1.Init.Period = 65535;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;

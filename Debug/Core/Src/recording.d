@@ -32,7 +32,9 @@ Core/Src/recording.o: ../Core/Src/recording.c ../Core/Inc/recording.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h \
- ../Core/Inc/i2c-lcd.h
+ ../Core/Inc/potentioRecording.h ../Core/Inc/ultrasonicRecording.h \
+ ../Core/Inc/resutlsDisplay.h ../Core/Inc/potentioRecording.h \
+ ../Core/Inc/ultrasonicRecording.h ../Core/Inc/resutlsDisplay.h
 ../Core/Inc/recording.h:
 ../Core/Inc/main.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:
@@ -68,4 +70,9 @@ Core/Src/recording.o: ../Core/Src/recording.c ../Core/Inc/recording.h \
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h:
-../Core/Inc/i2c-lcd.h:
+../Core/Inc/potentioRecording.h:
+../Core/Inc/ultrasonicRecording.h:
+../Core/Inc/resutlsDisplay.h:
+../Core/Inc/potentioRecording.h:
+../Core/Inc/ultrasonicRecording.h:
+../Core/Inc/resutlsDisplay.h:

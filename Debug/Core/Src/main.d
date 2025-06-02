@@ -34,9 +34,11 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h \
  ../Core/Inc/i2c-lcd.h ../Core/Inc/led.h ../Core/Inc/ultrasonic.h \
  ../Core/Inc/main.h ../Core/Inc/button.h ../Core/Inc/potentiometer.h \
- ../Core/Inc/recording.h ../Core/Inc/signals.h \
- ../Core/Inc/potentiometer.h ../Core/Inc/ultrasonic.h \
- ../Core/Inc/recording.h
+ ../Core/Inc/recording.h ../Core/Inc/potentioRecording.h \
+ ../Core/Inc/ultrasonicRecording.h ../Core/Inc/resutlsDisplay.h \
+ ../Core/Inc/signals.h ../Core/Inc/potentiometer.h \
+ ../Core/Inc/ultrasonic.h ../Core/Inc/recording.h \
+ ../Core/Inc/led_control.h ../Core/Inc/report_generator.h
 ../Core/Inc/main.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:
 ../Core/Inc/stm32f4xx_hal_conf.h:
@@ -78,7 +80,12 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
 ../Core/Inc/button.h:
 ../Core/Inc/potentiometer.h:
 ../Core/Inc/recording.h:
+../Core/Inc/potentioRecording.h:
+../Core/Inc/ultrasonicRecording.h:
+../Core/Inc/resutlsDisplay.h:
 ../Core/Inc/signals.h:
 ../Core/Inc/potentiometer.h:
 ../Core/Inc/ultrasonic.h:
 ../Core/Inc/recording.h:
+../Core/Inc/led_control.h:
+../Core/Inc/report_generator.h:

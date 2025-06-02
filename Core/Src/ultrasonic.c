@@ -1,9 +1,12 @@
 /* ultrasonic.c */
 #include "ultrasonic.h"
 #include "main.h"
+#include <stdio.h>
+#include <string.h>
 
 /* Global variable to store timer handle */
 TIM_HandleTypeDef *ultrasonicTimer;
+extern UART_HandleTypeDef huart2; // For debugging via UART
 
 void Ultrasonic_Init(TIM_HandleTypeDef *htim) {
     /* Store timer handle for later use */
@@ -50,9 +53,10 @@ float Ultrasonic_Read(void) {
     }
 
     val2 = __HAL_TIM_GET_COUNTER(ultrasonicTimer);  /* Capture end time */
+    uint32_t pulse_width = val2 - val1;
 
     /* 4. Calculate distance based on time difference */
-    distance = (val2-val1) * 0.034/2;
+    distance = pulse_width * 0.034/2;
 
     return distance;
 }
@@ -75,8 +79,17 @@ float Ultrasonic_GetDistance(void) {
     } else {
         filtered_cm = alpha * distance_cm + (1 - alpha) * filtered_cm;
     }
-
+    
+    // Convert to mm for the final value
+    float filtered_mm = filtered_cm * 10.0f;
+    
     // Return filtered distance in mm
-    return filtered_cm * 10.0f;  // Convert cm to mm
+    return filtered_mm;
 }
 
+// Empty debug function to maintain API compatibility
+void Ultrasonic_DebugDirectionChange(float currentDistance, float lastDistance, 
+                                    int8_t lastDirection, int8_t currentDirection, 
+                                    uint8_t detectedChange) {
+    // Function now empty
+}

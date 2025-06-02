@@ -1,0 +1,4 @@
+../Core/Src/resutlsDisplay.c:19:6:resutlsDisplay_PotentiometerWindow1	2
+../Core/Src/resutlsDisplay.c:58:6:resutlsDisplay_PotentiometerWindow2	3
+../Core/Src/resutlsDisplay.c:102:6:resutlsDisplay_UltrasonicWindow	3
+../Core/Src/resutlsDisplay.c:136:6:resutlsDisplay_CombinedWindow	1

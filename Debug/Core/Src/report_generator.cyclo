@@ -1,0 +1,5 @@
+../Core/Src/report_generator.c:17:6:Report_Init	1
+../Core/Src/report_generator.c:22:13:SendUartLine	2
+../Core/Src/report_generator.c:31:5:Report_LogLiveDataLine	3
+../Core/Src/report_generator.c:70:6:Report_WriteLiveDataHeader	2
+../Core/Src/report_generator.c:78:6:Report_GenerateAnalysisReport	6

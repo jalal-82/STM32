@@ -25,7 +25,7 @@ void lcd_send_cmd (char cmd,int i2c_frame_size)
 		// HAL transmits i2c_frame_data[0],[1], ... , i2c_frame_data[i2c_frame_size-1]
 		//Please write your own code here
 		HAL_I2C_Master_Transmit(&hi2c1, addr_8, i2c_frame_data, i2c_frame_size, 100);
-		
+
 		HAL_Delay(1);
 
 }
@@ -52,7 +52,7 @@ void lcd_clear (void)  // clear display
 {
 	//send command to clear the display
 	//Please write your own code here
-	
+
 	lcd_send_cmd(LCD_CLEARDISPLAY, 4);
 	HAL_Delay(1);
 }

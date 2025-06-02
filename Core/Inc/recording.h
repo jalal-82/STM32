@@ -3,6 +3,9 @@
  *
  *  Created on: May 18, 2025
  *      Author: jalal
+ *  
+ *  This header serves as a wrapper for the modularized recording functionality.
+ *  It maintains the original API while delegating to specialized modules.
  */
 
 #ifndef INC_RECORDING_H_
@@ -11,53 +14,23 @@
 #include "main.h"
 #include <stdint.h>
 
-typedef struct {
-    uint32_t startTime;      // Start time in milliseconds
-    uint32_t elapsedTime;    // Elapsed time in milliseconds
-    float minVoltage;        // Minimum voltage recorded
-    float maxVoltage;        // Maximum voltage recorded
-    uint32_t peakCount;      // Number of detected peaks
-    uint8_t isRecording;     // Recording status flag
-    float lastVoltage;       // Previous voltage reading (for peak detection)
-    uint8_t risingEdge;      // Flag to track rising edge (for peak detection)
-    float peakThreshold;     // Threshold for peak detection
-} PotRecordingData;
+// Include the specialized headers
+#include "potentioRecording.h"
+#include "ultrasonicRecording.h"
+#include "resutlsDisplay.h"
 
-typedef struct {
-    uint32_t startTime;      // Start time in milliseconds
-    uint32_t elapsedTime;    // Elapsed time in milliseconds
-    float minDistance;       // Minimum distance recorded (mm)
-    float maxDistance;       // Maximum distance recorded (mm)
-    uint32_t dirChangeCount; // Direction changes count
-    uint8_t isRecording;     // Recording status flag
-    float lastDistance;      // Previous distance reading
-    int8_t lastDirection;    // Last direction (-1=closer, 0=static, 1=farther)
-} UltraRecordingData;
+// Main recording API function prototypes
+void Recording_Init(void);
+void Recording_Start(void);
+void Recording_Stop(void);
+void Recording_ProcessPotReading(float voltage, float distanceMm);
+void Recording_ProcessUltraReading(float distanceMm, uint8_t isHighSignal);
+void Recording_ToggleDetailedStats(void);
+void Recording_UpdateDisplay(void);
+uint8_t Recording_IsShowingDetailedStats(void);
 
-// Function prototypes for potentiometer recording
-
-void PotRecording_Init(PotRecordingData  *data);
-void PotRecording_Start(PotRecordingData  *data);
-void PotRecording_Stop(PotRecordingData  *data);
-void PotRecording_Process(PotRecordingData  *data, float voltage);
-void PotRecording_DisplayStats(PotRecordingData  *data);
-
-// Function prototypes for ultrasonic recording
-void UltraRecording_Init(UltraRecordingData *data);
-void UltraRecording_Start(UltraRecordingData *data);
-void UltraRecording_Stop(UltraRecordingData *data);
-void UltraRecording_Process(UltraRecordingData *data, float distance);
-void UltraRecording_DisplayStats(UltraRecordingData *data);
-
-// debug only
-typedef struct {
-    float currentVoltage;
-    float minVoltage;
-    float maxVoltage;
-    uint32_t peakCount;
-} PotDebugData;
-void PotRecording_GetDebugData(PotRecordingData *data, PotDebugData *debugData);
-
-
+// Accessor functions for data structures (for report generation)
+PotRecordingData* Recording_GetPotData(void);
+UltraRecordingData* Recording_GetUltraData(void);
 
 #endif /* INC_RECORDING_H_ */
